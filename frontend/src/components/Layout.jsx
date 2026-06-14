@@ -24,28 +24,45 @@ export default function Layout() {
   const [anchor, setAnchor] = useState(null);
   const isMobile = useMediaQuery('(max-width:900px)');
 
-  const nav = [
-    { to: '/', label: t('dashboard'), icon: <DashboardIcon /> },
-    { to: '/pos', label: t('pos'), icon: <PointOfSale />, perm: 'pos' },
-    { to: '/products', label: t('products'), icon: <Category />, perm: 'products' },
-    { to: '/inventory', label: t('inventory'), icon: <Inventory2 />, perm: 'inventory' },
-    { to: '/customers', label: t('customers'), icon: <People />, perm: 'customers' },
-    { to: '/suppliers', label: t('suppliers'), icon: <LocalShipping />, perm: 'suppliers' },
-    { to: '/purchases', label: t('purchases'), icon: <ShoppingCart />, perm: 'purchases' },
-    { to: '/sale-returns', label: 'Sale Returns', icon: <AssignmentReturn />, perm: 'sale-returns' },
-    { to: '/purchase-returns', label: 'Purchase Returns', icon: <AssignmentReturned />, perm: 'purchase-returns' },
-    { to: '/ledgers', label: 'Ledgers', icon: <MenuBook />, anyPerm: ['customers', 'suppliers'] },
-    { to: '/reports', label: t('reports'), icon: <Assessment />, perm: 'reports' },
-    { to: '/users', label: t('users'), icon: <Group />, admin: true },
-    { to: '/audit-logs', label: t('auditLogs'), icon: <History />, admin: true },
-    { to: '/settings', label: t('settings'), icon: <SettingsIcon />, admin: true },
-  ].filter((n) => {
+  const isVisible = (n) => {
     if (n.admin) return isAdmin;
     if (n.anyPerm) return isAdmin || n.anyPerm.some((p) => can(p));
     return n.perm ? can(n.perm) : true;
-  });
+  };
 
-  const pageTitle = nav.find((n) => n.to === location.pathname)?.label || t('dashboard');
+  const navGroups = [
+    { items: [
+      { to: '/', label: t('dashboard'), icon: <DashboardIcon /> },
+      { to: '/pos', label: t('pos'), icon: <PointOfSale />, perm: 'pos' },
+    ] },
+    { heading: 'Catalog', items: [
+      { to: '/products', label: t('products'), icon: <Category />, perm: 'products' },
+      { to: '/inventory', label: t('inventory'), icon: <Inventory2 />, perm: 'inventory' },
+    ] },
+    { heading: 'People', items: [
+      { to: '/customers', label: t('customers'), icon: <People />, perm: 'customers' },
+      { to: '/suppliers', label: t('suppliers'), icon: <LocalShipping />, perm: 'suppliers' },
+    ] },
+    { heading: 'Transactions', items: [
+      { to: '/purchases', label: t('purchases'), icon: <ShoppingCart />, perm: 'purchases' },
+      { to: '/sale-returns', label: 'Sale Returns', icon: <AssignmentReturn />, perm: 'sale-returns' },
+      { to: '/purchase-returns', label: 'Purchase Returns', icon: <AssignmentReturned />, perm: 'purchase-returns' },
+    ] },
+    { heading: 'Finance', items: [
+      { to: '/ledgers', label: 'Ledgers', icon: <MenuBook />, anyPerm: ['customers', 'suppliers'] },
+      { to: '/reports', label: t('reports'), icon: <Assessment />, perm: 'reports' },
+    ] },
+    { heading: 'Admin', items: [
+      { to: '/users', label: t('users'), icon: <Group />, admin: true },
+      { to: '/audit-logs', label: t('auditLogs'), icon: <History />, admin: true },
+      { to: '/settings', label: t('settings'), icon: <SettingsIcon />, admin: true },
+    ] },
+  ]
+    .map((g) => ({ ...g, items: g.items.filter(isVisible) }))
+    .filter((g) => g.items.length);
+
+  const allItems = navGroups.flatMap((g) => g.items);
+  const pageTitle = allItems.find((n) => n.to === location.pathname)?.label || t('dashboard');
 
   const drawer = (
     <Box
@@ -77,34 +94,39 @@ export default function Layout() {
         </Box>
       </Box>
 
-      <Typography
-        sx={{ px: 3, pt: 1, pb: 0.5, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: 'rgba(148,163,184,0.65)' }}
-      >
-        Menu
-      </Typography>
-
-      {/* Nav */}
-      <List sx={{ px: 1.5, flexGrow: 1, overflowY: 'auto' }}>
-        {nav.map((n) => {
-          const active = location.pathname === n.to;
-          return (
-            <ListItemButton
-              key={n.to}
-              selected={active}
-              onClick={() => { navigate(n.to); setMobileOpen(false); }}
-              sx={{
-                mb: 0.5, py: 1, color: active ? sidebar.textActive : sidebar.text,
-                '& .MuiListItemIcon-root': { color: active ? '#60a5fa' : 'rgba(148,163,184,0.85)', minWidth: 38 },
-                '&:hover': { bgcolor: sidebar.hoverBg, color: '#fff' },
-                '&.Mui-selected, &.Mui-selected:hover': { bgcolor: sidebar.activeBg, color: '#fff' },
-              }}
-            >
-              <ListItemIcon>{n.icon}</ListItemIcon>
-              <ListItemText primary={n.label} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: active ? 700 : 500 }} />
-            </ListItemButton>
-          );
-        })}
+      {/* Nav (grouped) */}
+      <List sx={{ px: 1.5, pt: 0.5, flexGrow: 1, overflowY: 'auto' }}>
+        {navGroups.map((group, gi) => (
+          <Box key={group.heading || gi} sx={{ mb: 0.5 }}>
+            {group.heading && (
+              <Typography
+                sx={{ px: 1.5, pt: gi === 0 ? 0.5 : 1.75, pb: 0.5, fontSize: '0.66rem', fontWeight: 700,
+                  letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(148,163,184,0.55)' }}
+              >
+                {group.heading}
+              </Typography>
+            )}
+            {group.items.map((n) => {
+              const active = location.pathname === n.to;
+              return (
+                <ListItemButton
+                  key={n.to}
+                  selected={active}
+                  onClick={() => { navigate(n.to); setMobileOpen(false); }}
+                  sx={{
+                    mb: 0.25, py: 0.85, color: active ? sidebar.textActive : sidebar.text,
+                    '& .MuiListItemIcon-root': { color: active ? '#60a5fa' : 'rgba(148,163,184,0.85)', minWidth: 38 },
+                    '&:hover': { bgcolor: sidebar.hoverBg, color: '#fff' },
+                    '&.Mui-selected, &.Mui-selected:hover': { bgcolor: sidebar.activeBg, color: '#fff' },
+                  }}
+                >
+                  <ListItemIcon>{n.icon}</ListItemIcon>
+                  <ListItemText primary={n.label} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: active ? 700 : 500 }} />
+                </ListItemButton>
+              );
+            })}
+          </Box>
+        ))}
       </List>
 
       {/* User card */}

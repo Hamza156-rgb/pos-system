@@ -25,11 +25,22 @@ export default function Products() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
+  const [catOpen, setCatOpen] = useState(false);
+  const [newCat, setNewCat] = useState('');
 
   const params = { page, limit: 10, search };
   const { data, isLoading, refetch } = useFetch('products', '/products', params);
-  const { data: catData } = useFetch('categories', '/categories');
+  const { data: catData, refetch: refetchCats } = useFetch('categories', '/categories');
   const categories = catData?.data || [];
+
+  const addCategory = async () => {
+    const name = newCat.trim();
+    if (!name) return;
+    const res = await api.post('/categories', { name });
+    await refetchCats();
+    setForm((f) => ({ ...f, CategoryId: res.data.data.id }));
+    setNewCat(''); setCatOpen(false);
+  };
   const rows = data?.data || [];
   const totalPages = data?.pagination?.totalPages || 1;
 
@@ -163,10 +174,15 @@ export default function Products() {
             <Grid item xs={12} sm={6}><TextField label="SKU (auto if empty)" fullWidth size="small" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></Grid>
             <Grid item xs={12} sm={6}><TextField label="Barcode (auto if empty)" fullWidth size="small" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} /></Grid>
             <Grid item xs={12} sm={6}>
-              <TextField select label={t('category')} fullWidth size="small" value={form.CategoryId} onChange={(e) => setForm({ ...form, CategoryId: e.target.value })}>
-                <MenuItem value="">-- None --</MenuItem>
-                {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-              </TextField>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField select label={t('category')} fullWidth size="small" value={form.CategoryId} onChange={(e) => setForm({ ...form, CategoryId: e.target.value })}>
+                  <MenuItem value="">-- None --</MenuItem>
+                  {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </TextField>
+                <Tooltip title="Add new category">
+                  <Button variant="outlined" size="small" onClick={() => setCatOpen(true)} sx={{ minWidth: 0, px: 1.5, whiteSpace: 'nowrap' }} startIcon={<Add />}>New</Button>
+                </Tooltip>
+              </Stack>
             </Grid>
             <Grid item xs={12} sm={6}><TextField label={t('brand')} fullWidth size="small" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} /></Grid>
             <Grid item xs={12} sm={6}><TextField label="Unit" fullWidth size="small" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></Grid>
@@ -186,6 +202,19 @@ export default function Products() {
         <DialogActions>
           <Button onClick={() => setOpen(false)}>{t('cancel')}</Button>
           <Button variant="contained" onClick={save} disabled={!form.name}>{t('save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Quick add category */}
+      <Dialog open={catOpen} onClose={() => setCatOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>New Category</DialogTitle>
+        <DialogContent dividers>
+          <TextField label="Category name" autoFocus fullWidth size="small" value={newCat}
+            onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addCategory(); }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCatOpen(false)}>{t('cancel')}</Button>
+          <Button variant="contained" onClick={addCategory} disabled={!newCat.trim()}>Add</Button>
         </DialogActions>
       </Dialog>
     </Box>
