@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Customer, Sale, SaleItem } from '../models/index.js';
+import { Customer, Sale, SaleItem, CustomerPayment } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { ok, created } from '../utils/response.js';
@@ -45,5 +45,8 @@ export const settleCredit = asyncHandler(async (req, res) => {
   if (amount <= 0) throw ApiError.badRequest('Amount must be positive');
   c.outstandingBalance = Math.max(0, +(Number(c.outstandingBalance) - amount).toFixed(2));
   await c.save();
+  await CustomerPayment.create({
+    CustomerId: c.id, amount, method: req.body.method || 'cash', note: req.body.note || 'Udhaar repayment', UserId: req.user?.id,
+  });
   ok(res, c, 'Payment recorded');
 });

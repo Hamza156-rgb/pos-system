@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import {
-  Box, Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody,
+  Box, Typography, Button, Table, TableHead, TableRow, TableCell, TableBody,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Grid, Stack, Chip, Tooltip,
+  Divider, FormGroup, FormControlLabel, Checkbox,
 } from '@mui/material';
-import { Add, Edit, Delete, GroupOutlined } from '@mui/icons-material';
+import { Add, Edit, Delete, GroupOutlined, LockOutlined } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { PageHeader, TableCard, EmptyState, NameCell } from '../components/ui.jsx';
+import { GRANTABLE_SCREENS, DEFAULT_CASHIER_PERMISSIONS } from '../config/permissions.js';
 
-const empty = { name: '', email: '', phone: '', role: 'cashier', password: '', isActive: true };
+const empty = { name: '', email: '', phone: '', role: 'cashier', password: '', isActive: true, permissions: DEFAULT_CASHIER_PERMISSIONS };
 
 export default function Users() {
   const { t } = useI18n();
@@ -23,7 +25,16 @@ export default function Users() {
   const removeM = useRemove((id) => `/users/${id}`, 'users');
 
   const openCreate = () => { setForm(empty); setEditId(null); setOpen(true); };
-  const openEdit = (u) => { setForm({ ...empty, ...u, password: '' }); setEditId(u.id); setOpen(true); };
+  const openEdit = (u) => {
+    setForm({ ...empty, ...u, password: '', permissions: Array.isArray(u.permissions) ? u.permissions : [] });
+    setEditId(u.id); setOpen(true);
+  };
+
+  const togglePerm = (key) => setForm((f) => {
+    const set = new Set(f.permissions || []);
+    if (set.has(key)) set.delete(key); else set.add(key);
+    return { ...f, permissions: [...set] };
+  });
 
   const save = async () => {
     const body = { ...form };
@@ -95,6 +106,33 @@ export default function Users() {
                 </TextField>
               </Grid>
             )}
+
+            <Grid item xs={12}>
+              {form.role === 'admin' ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 2, bgcolor: '#f8fafc', color: 'text.secondary' }}>
+                  <LockOutlined fontSize="small" />
+                  <Typography variant="body2">Admins have full access to every screen.</Typography>
+                </Box>
+              ) : (
+                <>
+                  <Divider sx={{ mb: 1.5 }} />
+                  <Typography variant="subtitle2" gutterBottom>Screen Access</Typography>
+                  <Typography variant="caption" color="text.secondary">Choose which screens this cashier can open.</Typography>
+                  <FormGroup>
+                    <Grid container>
+                      {GRANTABLE_SCREENS.map((s) => (
+                        <Grid item xs={12} sm={6} key={s.key}>
+                          <FormControlLabel
+                            control={<Checkbox size="small" checked={(form.permissions || []).includes(s.key)} onChange={() => togglePerm(s.key)} />}
+                            label={s.label}
+                          />
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </FormGroup>
+                </>
+              )}
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>

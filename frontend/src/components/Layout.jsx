@@ -7,7 +7,7 @@ import {
 import {
   Dashboard as DashboardIcon, PointOfSale, Inventory2, Category, People, LocalShipping,
   ShoppingCart, Assessment, Settings as SettingsIcon, Group, History, Menu as MenuIcon,
-  Translate, Logout, StorefrontRounded,
+  Translate, Logout, StorefrontRounded, AssignmentReturn, AssignmentReturned, MenuBook,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../context/I18nContext.jsx';
@@ -16,7 +16,7 @@ import { sidebar } from '../theme.js';
 const drawerWidth = sidebar.width;
 
 export default function Layout() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, can } = useAuth();
   const { t, toggleLang, lang } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,17 +26,24 @@ export default function Layout() {
 
   const nav = [
     { to: '/', label: t('dashboard'), icon: <DashboardIcon /> },
-    { to: '/pos', label: t('pos'), icon: <PointOfSale /> },
-    { to: '/products', label: t('products'), icon: <Category /> },
-    { to: '/inventory', label: t('inventory'), icon: <Inventory2 /> },
-    { to: '/customers', label: t('customers'), icon: <People /> },
-    { to: '/suppliers', label: t('suppliers'), icon: <LocalShipping />, admin: true },
-    { to: '/purchases', label: t('purchases'), icon: <ShoppingCart />, admin: true },
-    { to: '/reports', label: t('reports'), icon: <Assessment />, admin: true },
+    { to: '/pos', label: t('pos'), icon: <PointOfSale />, perm: 'pos' },
+    { to: '/products', label: t('products'), icon: <Category />, perm: 'products' },
+    { to: '/inventory', label: t('inventory'), icon: <Inventory2 />, perm: 'inventory' },
+    { to: '/customers', label: t('customers'), icon: <People />, perm: 'customers' },
+    { to: '/suppliers', label: t('suppliers'), icon: <LocalShipping />, perm: 'suppliers' },
+    { to: '/purchases', label: t('purchases'), icon: <ShoppingCart />, perm: 'purchases' },
+    { to: '/sale-returns', label: 'Sale Returns', icon: <AssignmentReturn />, perm: 'sale-returns' },
+    { to: '/purchase-returns', label: 'Purchase Returns', icon: <AssignmentReturned />, perm: 'purchase-returns' },
+    { to: '/ledgers', label: 'Ledgers', icon: <MenuBook />, anyPerm: ['customers', 'suppliers'] },
+    { to: '/reports', label: t('reports'), icon: <Assessment />, perm: 'reports' },
     { to: '/users', label: t('users'), icon: <Group />, admin: true },
     { to: '/audit-logs', label: t('auditLogs'), icon: <History />, admin: true },
     { to: '/settings', label: t('settings'), icon: <SettingsIcon />, admin: true },
-  ].filter((n) => !n.admin || isAdmin);
+  ].filter((n) => {
+    if (n.admin) return isAdmin;
+    if (n.anyPerm) return isAdmin || n.anyPerm.some((p) => can(p));
+    return n.perm ? can(n.perm) : true;
+  });
 
   const pageTitle = nav.find((n) => n.to === location.pathname)?.label || t('dashboard');
 

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
-  Box, Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody,
-  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Stack, Tooltip,
+  Box, Typography, Button, Table, TableHead, TableRow, TableCell, TableBody,
+  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Stack, Tooltip, Chip,
 } from '@mui/material';
-import { Add, Edit, Delete, History, LocalShippingOutlined } from '@mui/icons-material';
+import { Add, Edit, Delete, History, LocalShippingOutlined, Payments } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import api from '../services/api.js';
@@ -18,8 +18,10 @@ export default function Suppliers() {
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [history, setHistory] = useState(null);
+  const [pay, setPay] = useState(null);
+  const [payAmt, setPayAmt] = useState('');
 
-  const { data } = useFetch('suppliers', '/suppliers');
+  const { data, refetch } = useFetch('suppliers', '/suppliers');
   const suppliers = data?.data || [];
   const createM = useCreate('/suppliers', 'suppliers');
   const updateM = useUpdate((id) => `/suppliers/${id}`, 'suppliers');
@@ -38,6 +40,10 @@ export default function Suppliers() {
     const res = await api.get(`/suppliers/${s.id}`);
     setHistory(res.data.data);
   };
+  const doPay = async () => {
+    await api.post(`/suppliers/${pay.id}/pay`, { amount: Number(payAmt) });
+    setPay(null); setPayAmt(''); refetch();
+  };
 
   return (
     <Box>
@@ -54,7 +60,7 @@ export default function Suppliers() {
               <TableCell>{t('name')}</TableCell>
               <TableCell>Phone</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Address</TableCell>
+              <TableCell align="right">Payable (We Owe)</TableCell>
               <TableCell align="right">{t('actions')}</TableCell>
             </TableRow>
           </TableHead>
@@ -69,9 +75,16 @@ export default function Suppliers() {
                 <TableCell><NameCell name={s.name} /></TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{s.phone}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{s.email}</TableCell>
-                <TableCell sx={{ color: 'text.secondary' }}>{s.address}</TableCell>
+                <TableCell align="right">
+                  {Number(s.outstandingBalance) > 0
+                    ? <Chip size="small" color="warning" label={money(s.outstandingBalance)} sx={{ fontWeight: 700 }} />
+                    : <Chip size="small" color="success" variant="outlined" label="Clear" sx={{ fontWeight: 700 }} />}
+                </TableCell>
                 <TableCell align="right">
                   <Tooltip title="Purchase history"><IconButton size="small" onClick={() => viewHistory(s)}><History fontSize="small" /></IconButton></Tooltip>
+                  {Number(s.outstandingBalance) > 0 && (
+                    <Tooltip title="Record payment"><IconButton size="small" color="success" onClick={() => { setPay(s); setPayAmt(s.outstandingBalance); }}><Payments fontSize="small" /></IconButton></Tooltip>
+                  )}
                   <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(s)}><Edit fontSize="small" /></IconButton></Tooltip>
                   <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => del(s.id)}><Delete fontSize="small" /></IconButton></Tooltip>
                 </TableCell>
@@ -118,6 +131,18 @@ export default function Suppliers() {
           </Table>
         </DialogContent>
         <DialogActions><Button onClick={() => setHistory(null)}>Close</Button></DialogActions>
+      </Dialog>
+
+      <Dialog open={!!pay} onClose={() => setPay(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Pay Supplier — {pay?.name}</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" mb={2}>Payable: {money(pay?.outstandingBalance)}</Typography>
+          <TextField label="Amount Paid" type="number" fullWidth size="small" value={payAmt} onChange={(e) => setPayAmt(e.target.value)} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPay(null)}>{t('cancel')}</Button>
+          <Button variant="contained" onClick={doPay} disabled={!payAmt}>Record Payment</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

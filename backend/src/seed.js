@@ -17,8 +17,8 @@ export const runSeed = async () => {
   // Users
   await User.bulkCreate(
     [
-      { name: 'Store Admin', email: 'admin@pos.com', password: 'admin123', role: 'admin', phone: '03001234567' },
-      { name: 'Ali Cashier', email: 'cashier@pos.com', password: 'cashier123', role: 'cashier', phone: '03007654321' },
+      { name: 'Store Admin', email: 'admin@pos.com', password: 'admin123', role: 'admin', phone: '03001234567', permissions: [] },
+      { name: 'Ali Cashier', email: 'cashier@pos.com', password: 'cashier123', role: 'cashier', phone: '03007654321', permissions: ['pos', 'products', 'inventory', 'customers'] },
     ],
     { individualHooks: true }
   );

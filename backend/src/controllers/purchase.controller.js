@@ -7,6 +7,16 @@ import { logAudit } from '../middlewares/audit.js';
 
 const genOrderNumber = () => 'PO-' + Date.now().toString(36).toUpperCase();
 
+// Increase what we owe a supplier when a PO is received.
+const bumpSupplierPayable = async (supplierId, amount, t) => {
+  if (!supplierId) return;
+  const supplier = await Supplier.findByPk(supplierId, { transaction: t });
+  if (supplier) {
+    supplier.outstandingBalance = +(Number(supplier.outstandingBalance) + Number(amount)).toFixed(2);
+    await supplier.save({ transaction: t });
+  }
+};
+
 export const list = asyncHandler(async (req, res) => {
   const purchases = await Purchase.findAll({
     include: [{ model: Supplier, attributes: ['id', 'name'] }],
@@ -43,11 +53,12 @@ export const create = asyncHandler(async (req, res) => {
         { transaction: t }
       );
     }
-    // If created directly as received, push stock in
+    // If created directly as received, push stock in and book the payable
     if (status === 'received') {
       for (const it of items) {
         await adjustStock({ productId: it.productId, type: 'in', quantity: Number(it.quantity), reason: 'Purchase received', reference: po.orderNumber, userId: req.user.id }, t);
       }
+      await bumpSupplierPayable(supplierId, totalAmount, t);
     }
     return po;
   });
@@ -67,6 +78,7 @@ export const receive = asyncHandler(async (req, res) => {
     }
     po.status = 'received';
     await po.save({ transaction: t });
+    await bumpSupplierPayable(po.SupplierId, po.totalAmount, t);
     return po;
   });
   await logAudit({ userId: req.user.id, action: 'PURCHASE_RECEIVE', entity: 'Purchase', entityId: result.id, ip: req.ip });

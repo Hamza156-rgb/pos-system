@@ -28,8 +28,19 @@ export function AuthProvider({ children }) {
   }, []);
 
   const isAdmin = user?.role === 'admin';
+
+  // Screen-access check: admins can do anything; cashiers are limited to their granted screens.
+  const can = useCallback(
+    (key) => {
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+      return Array.isArray(user.permissions) && user.permissions.includes(key);
+    },
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, can, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

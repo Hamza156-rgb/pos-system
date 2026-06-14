@@ -8,6 +8,9 @@ export default (sequelize) => {
     email: { type: DataTypes.STRING, allowNull: false, unique: true, validate: { isEmail: true } },
     password: { type: DataTypes.STRING, allowNull: false },
     role: { type: DataTypes.ENUM('admin', 'cashier'), defaultValue: 'cashier' },
+    // Screen-access allowlist for cashiers, e.g. ["pos","products","reports"].
+    // Admins bypass this and have access to everything.
+    permissions: { type: DataTypes.JSON, defaultValue: [] },
     phone: { type: DataTypes.STRING },
     isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
     refreshToken: { type: DataTypes.TEXT },
