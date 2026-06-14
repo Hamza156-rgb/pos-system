@@ -6,7 +6,7 @@ import {
 import { Add, Edit, Delete, GroupOutlined } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
-import { PageHeader, TableCard, EmptyState } from '../components/ui.jsx';
+import { PageHeader, TableCard, EmptyState, NameCell } from '../components/ui.jsx';
 
 const empty = { name: '', email: '', phone: '', role: 'cashier', password: '', isActive: true };
 
@@ -58,7 +58,7 @@ export default function Users() {
             )}
             {users.map((u) => (
               <TableRow key={u.id} hover>
-                <TableCell sx={{ fontWeight: 600 }}>{u.name}</TableCell>
+                <TableCell><NameCell name={u.name} secondary={u.email} /></TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{u.email}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{u.phone}</TableCell>
                 <TableCell><Chip size="small" label={u.role} color={u.role === 'admin' ? 'primary' : 'default'} variant={u.role === 'admin' ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize', fontWeight: 700 }} /></TableCell>

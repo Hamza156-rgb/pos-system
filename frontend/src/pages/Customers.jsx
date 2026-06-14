@@ -9,7 +9,7 @@ import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../services/api.js';
-import { PageHeader, SearchField, TableCard, EmptyState } from '../components/ui.jsx';
+import { PageHeader, SearchField, TableCard, EmptyState, NameCell } from '../components/ui.jsx';
 
 const empty = { name: '', phone: '', email: '', address: '' };
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
@@ -74,7 +74,7 @@ export default function Customers() {
             )}
             {customers.map((c) => (
               <TableRow key={c.id} hover>
-                <TableCell sx={{ fontWeight: 600 }}>{c.name}</TableCell>
+                <TableCell><NameCell name={c.name} /></TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{c.phone}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{c.email}</TableCell>
                 <TableCell align="right">

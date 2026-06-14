@@ -7,7 +7,7 @@ import { Add, Edit, Delete, History, LocalShippingOutlined } from '@mui/icons-ma
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import api from '../services/api.js';
-import { PageHeader, TableCard, EmptyState } from '../components/ui.jsx';
+import { PageHeader, TableCard, EmptyState, NameCell } from '../components/ui.jsx';
 
 const empty = { name: '', phone: '', email: '', address: '' };
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
@@ -66,7 +66,7 @@ export default function Suppliers() {
             )}
             {suppliers.map((s) => (
               <TableRow key={s.id} hover>
-                <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
+                <TableCell><NameCell name={s.name} /></TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{s.phone}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{s.email}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{s.address}</TableCell>

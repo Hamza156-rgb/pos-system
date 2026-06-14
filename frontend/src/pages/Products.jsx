@@ -9,7 +9,7 @@ import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../services/api.js';
-import { PageHeader, SearchField, TableCard, EmptyState } from '../components/ui.jsx';
+import { PageHeader, SearchField, TableCard, EmptyState, NameCell } from '../components/ui.jsx';
 
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
 const empty = {
@@ -126,7 +126,7 @@ export default function Products() {
             )}
             {rows.map((p) => (
               <TableRow key={p.id} hover>
-                <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
+                <TableCell><NameCell name={p.name} secondary={p.brand} /></TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{p.sku}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{p.barcode}</TableCell>
                 <TableCell>{p.Category?.name || '-'}</TableCell>

@@ -101,23 +101,37 @@ export const buildTheme = (dir) =>
         },
       },
       MuiDrawer: { styleOverrides: { paper: { border: 'none' } } },
+      MuiTable: {
+        styleOverrides: {
+          root: {
+            // zebra striping + branded hover on body rows only
+            '& .MuiTableBody-root .MuiTableRow-root:nth-of-type(even)': { backgroundColor: '#fafbfd' },
+            '& .MuiTableBody-root .MuiTableRow-root': { transition: 'background-color .12s ease' },
+            '& .MuiTableBody-root .MuiTableRow-root:hover': { backgroundColor: 'rgba(37,99,235,0.06)' },
+          },
+        },
+      },
       MuiTableCell: {
         styleOverrides: {
           head: {
             fontWeight: 700,
-            fontSize: '0.78rem',
+            fontSize: '0.74rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.04em',
+            letterSpacing: '0.05em',
             color: '#64748b',
             backgroundColor: '#f8fafc',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '2px solid #e2e8f0',
+            whiteSpace: 'nowrap',
           },
-          root: { borderBottom: '1px solid #f1f5f9' },
+          root: { borderBottom: '1px solid #eef2f7', fontSize: '0.875rem' },
+          // size="small" is used everywhere — give rows real breathing room
+          sizeSmall: { padding: '13px 18px' },
         },
       },
       MuiTableRow: {
         styleOverrides: {
-          root: { '&:last-child td': { borderBottom: 0 }, '&:hover': { backgroundColor: '#f8fafc' } },
+          root: { '&:last-child td': { borderBottom: 0 } },
+          head: { '& th': { paddingTop: 14, paddingBottom: 14 } },
         },
       },
       MuiChip: {
