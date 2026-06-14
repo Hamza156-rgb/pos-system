@@ -1,0 +1,6 @@
+name,sku,barcode,brand,purchasePrice,sellingPrice,stockQuantity,reorderLevel,unit,status,category
+Blue Ballpoint Pen,SKU-IMP001,2001000000101,Piano,8,15,500,50,pcs,active,Stationery
+A4 Ream Paper 80gsm,SKU-IMP002,2001000000102,Double A,950,1200,80,10,ream,active,Office Supplies
+Geometry Box,SKU-IMP003,2001000000103,Staedtler,180,250,120,15,box,active,School Supplies
+Sticky Notes 3x3,SKU-IMP004,2001000000104,3M,90,140,200,20,pad,active,Office Supplies
+HB Pencil (Pack of 12),SKU-IMP005,2001000000105,Apsara,110,160,150,20,pack,active,Stationery
