@@ -33,7 +33,7 @@ export default function POS() {
   const [queueCount, setQueueCount] = useState(getQueue().length);
   const barcodeRef = useRef(null);
 
-  const { data: prodData } = useFetch('pos-products', '/products', { limit: 100, search });
+  const { data: prodData, refetch: refetchProducts } = useFetch('pos-products', '/products', { limit: 100, search });
   const { data: custData } = useFetch('pos-customers', '/customers');
   const { data: settingData } = useFetch('settings', '/settings');
   const products = prodData?.data || [];
@@ -52,7 +52,7 @@ export default function POS() {
   }, []);
 
   const doSync = async () => {
-    try { const r = await syncQueue(); setQueueCount(getQueue().length); if (r.synced) setToast({ sev: 'success', msg: `Synced ${r.synced} offline sale(s)` }); } catch { /* offline */ }
+    try { const r = await syncQueue(); setQueueCount(getQueue().length); if (r.synced) { setToast({ sev: 'success', msg: `Synced ${r.synced} offline sale(s)` }); refetchProducts(); } } catch { /* offline */ }
   };
 
   const addToCart = (product) => {
@@ -111,6 +111,7 @@ export default function POS() {
       printReceipt(sale, shop);
       window._lastSale = sale;
       resetSale();
+      refetchProducts(); // refresh on-screen stock counts in real time
     } catch (err) {
       setToast({ sev: 'error', msg: err.response?.data?.message || 'Sale failed' });
     }
