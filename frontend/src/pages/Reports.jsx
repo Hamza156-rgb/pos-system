@@ -7,14 +7,17 @@ import { FileDownload } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useFetch } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
+import { PageHeader, TableCard } from '../components/ui.jsx';
 
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
 
-const Stat = ({ label, value, color }) => (
-  <Card><CardContent>
-    <Typography variant="body2" color="text.secondary">{label}</Typography>
-    <Typography variant="h5" fontWeight={700} color={color}>{value}</Typography>
-  </CardContent></Card>
+const Stat = ({ label, value, color = 'primary.main' }) => (
+  <Card sx={{ height: '100%', borderLeft: '4px solid', borderLeftColor: color }}>
+    <CardContent>
+      <Typography variant="body2" color="text.secondary">{label}</Typography>
+      <Typography variant="h5" fontWeight={800} sx={{ mt: 0.5 }}>{value}</Typography>
+    </CardContent>
+  </Card>
 );
 
 const toCsv = (rows, headers) => {
@@ -47,13 +50,13 @@ export default function Reports() {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={700} mb={2}>{t('reports')}</Typography>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+      <PageHeader title={t('reports')} subtitle="Sales, inventory valuation, profit and daily cash closing" />
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2.5, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 } }}>
         <Tab label="Sales" /><Tab label="Inventory" /><Tab label="Financial" /><Tab label="Daily Cash Closing" />
       </Tabs>
 
       {(tab === 0 || tab === 2) && (
-        <Paper sx={{ p: 2, mb: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2, mb: 2.5, borderRadius: 3 }}>
           <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
             <TextField select size="small" label="Period" value={period} onChange={(e) => { setPeriod(e.target.value); setFrom(''); setTo(''); }} sx={{ minWidth: 140 }}>
               <MenuItem value="daily">Today</MenuItem>
@@ -82,7 +85,7 @@ export default function Reports() {
               { key: 'paymentMethod', label: 'Method' }, { key: 'grandTotal', label: 'Total' },
             ])}>Export CSV</Button>
           </Stack>
-          <Paper>
+          <TableCard>
             <Table size="small">
               <TableHead><TableRow><TableCell>Invoice</TableCell><TableCell>Date</TableCell><TableCell>Method</TableCell><TableCell align="right">Total</TableCell></TableRow></TableHead>
               <TableBody>
@@ -97,7 +100,7 @@ export default function Reports() {
                 ))}
               </TableBody>
             </Table>
-          </Paper>
+          </TableCard>
         </>
       )}
 
@@ -114,7 +117,7 @@ export default function Reports() {
               { key: 'name', label: 'Name' }, { key: 'sku', label: 'SKU' }, { key: 'stock', label: 'Stock' }, { key: 'sellingPrice', label: 'Price' },
             ])}>Export CSV</Button>
           </Stack>
-          <Paper>
+          <TableCard>
             <Table size="small">
               <TableHead><TableRow><TableCell>Product</TableCell><TableCell>SKU</TableCell><TableCell align="right">Stock</TableCell><TableCell align="right">Cost</TableCell><TableCell align="right">Price</TableCell></TableRow></TableHead>
               <TableBody>
@@ -129,7 +132,7 @@ export default function Reports() {
                 ))}
               </TableBody>
             </Table>
-          </Paper>
+          </TableCard>
         </>
       )}
 
@@ -140,12 +143,15 @@ export default function Reports() {
           <Grid item xs={6} md={3}><Stat label="Gross Profit" value={money(fin.grossProfit)} color="secondary.main" /></Grid>
           <Grid item xs={6} md={3}><Stat label="Margin %" value={(fin.margin || 0) + '%'} /></Grid>
           <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <ResponsiveContainer width="100%" height={280}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+              <Typography variant="h6" mb={2}>Revenue vs Cost vs Profit</Typography>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={[{ name: 'Revenue', v: fin.revenue || 0 }, { name: 'COGS', v: fin.cogs || 0 }, { name: 'Gross Profit', v: fin.grossProfit || 0 }]}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" /><YAxis /><Tooltip />
-                  <Bar dataKey="v" fill="#1565c0" radius={[6, 6, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v) => money(v)} cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
+                  <Bar dataKey="v" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={64} />
                 </BarChart>
               </ResponsiveContainer>
             </Paper>

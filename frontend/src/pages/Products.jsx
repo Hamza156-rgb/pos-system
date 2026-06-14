@@ -4,11 +4,12 @@ import {
   Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Grid, MenuItem,
   Chip, Pagination, Stack, Tooltip, InputAdornment,
 } from '@mui/material';
-import { Add, Edit, Delete, Search, FileDownload, FileUpload } from '@mui/icons-material';
+import { Add, Edit, Delete, FileDownload, FileUpload, Inventory2Outlined } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../services/api.js';
+import { PageHeader, SearchField, TableCard, EmptyState } from '../components/ui.jsx';
 
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
 const empty = {
@@ -78,29 +79,31 @@ export default function Products() {
     refetch();
   };
 
+  const colSpan = isAdmin ? 8 : 7;
+
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
-        <Typography variant="h4" fontWeight={700}>{t('products')}</Typography>
-        {isAdmin && (
-          <Stack direction="row" spacing={1}>
+      <PageHeader
+        title={t('products')}
+        subtitle="Manage your catalog, pricing and stock levels"
+        actions={isAdmin && (
+          <>
             <Button variant="outlined" startIcon={<FileDownload />} onClick={exportCsv}>Export</Button>
             <Button variant="outlined" component="label" startIcon={<FileUpload />}>
               Import<input type="file" accept=".csv" hidden onChange={importCsv} />
             </Button>
             <Button variant="contained" startIcon={<Add />} onClick={openCreate}>{t('addProduct')}</Button>
-          </Stack>
+          </>
         )}
-      </Stack>
-
-      <TextField
-        size="small" fullWidth placeholder={t('search')} value={search}
-        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-        sx={{ mb: 2 }}
-        InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
       />
 
-      <Paper>
+      <SearchField
+        placeholder={t('search')} value={search}
+        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+        sx={{ mb: 2.5, maxWidth: '100%' }}
+      />
+
+      <TableCard>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -115,21 +118,26 @@ export default function Products() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={8}>Loading...</TableCell></TableRow>}
-            {!isLoading && rows.length === 0 && <TableRow><TableCell colSpan={8}>No products found.</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={colSpan} align="center" sx={{ py: 4, color: 'text.secondary' }}>Loading…</TableCell></TableRow>}
+            {!isLoading && rows.length === 0 && (
+              <TableRow><TableCell colSpan={colSpan} sx={{ border: 0 }}>
+                <EmptyState icon={<Inventory2Outlined />} title="No products found" subtitle="Add your first product or adjust your search." />
+              </TableCell></TableRow>
+            )}
             {rows.map((p) => (
               <TableRow key={p.id} hover>
-                <TableCell>{p.name}</TableCell>
-                <TableCell>{p.sku}</TableCell>
-                <TableCell>{p.barcode}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{p.sku}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{p.barcode}</TableCell>
                 <TableCell>{p.Category?.name || '-'}</TableCell>
-                <TableCell align="right">{money(p.sellingPrice)}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{money(p.sellingPrice)}</TableCell>
                 <TableCell align="right">
                   <Chip size="small" label={p.stockQuantity}
-                    color={p.stockQuantity <= p.reorderLevel ? 'error' : 'default'} />
+                    color={p.stockQuantity <= p.reorderLevel ? 'error' : 'default'} sx={{ fontWeight: 700 }} />
                 </TableCell>
                 <TableCell>
-                  <Chip size="small" label={p.status} color={p.status === 'active' ? 'success' : 'default'} />
+                  <Chip size="small" label={p.status} color={p.status === 'active' ? 'success' : 'default'}
+                    variant={p.status === 'active' ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize' }} />
                 </TableCell>
                 {isAdmin && (
                   <TableCell align="right">
@@ -141,10 +149,10 @@ export default function Products() {
             ))}
           </TableBody>
         </Table>
-      </Paper>
+      </TableCard>
 
-      <Stack alignItems="center" mt={2}>
-        <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="primary" />
+      <Stack alignItems="center" mt={2.5}>
+        <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="primary" shape="rounded" />
       </Stack>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>

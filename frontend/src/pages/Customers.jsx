@@ -4,11 +4,12 @@ import {
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Stack,
   Chip, Tooltip, InputAdornment,
 } from '@mui/material';
-import { Add, Edit, Delete, History, Payments, Search } from '@mui/icons-material';
+import { Add, Edit, Delete, History, Payments, PeopleAltOutlined } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../services/api.js';
+import { PageHeader, SearchField, TableCard, EmptyState } from '../components/ui.jsx';
 
 const empty = { name: '', phone: '', email: '', address: '' };
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
@@ -46,18 +47,18 @@ export default function Customers() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight={700}>{t('customers')}</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add Customer</Button>
-      </Stack>
-
-      <TextField
-        size="small" fullWidth placeholder={t('search')} value={search}
-        onChange={(e) => setSearch(e.target.value)} sx={{ mb: 2 }}
-        InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
+      <PageHeader
+        title={t('customers')}
+        subtitle="Customer directory, purchase history and Udhaar (credit) balances"
+        actions={<Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add Customer</Button>}
       />
 
-      <Paper>
+      <SearchField
+        placeholder={t('search')} value={search}
+        onChange={(e) => setSearch(e.target.value)} sx={{ mb: 2.5, maxWidth: '100%' }}
+      />
+
+      <TableCard>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -66,16 +67,20 @@ export default function Customers() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {customers.length === 0 && <TableRow><TableCell colSpan={5}>No customers found.</TableCell></TableRow>}
+            {customers.length === 0 && (
+              <TableRow><TableCell colSpan={5} sx={{ border: 0 }}>
+                <EmptyState icon={<PeopleAltOutlined />} title="No customers found" subtitle="Add a customer to start tracking purchases." />
+              </TableCell></TableRow>
+            )}
             {customers.map((c) => (
               <TableRow key={c.id} hover>
-                <TableCell>{c.name}</TableCell>
-                <TableCell>{c.phone}</TableCell>
-                <TableCell>{c.email}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{c.name}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{c.phone}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{c.email}</TableCell>
                 <TableCell align="right">
                   {Number(c.outstandingBalance) > 0
-                    ? <Chip size="small" color="error" label={money(c.outstandingBalance)} />
-                    : <Chip size="small" color="success" label="Clear" />}
+                    ? <Chip size="small" color="error" label={money(c.outstandingBalance)} sx={{ fontWeight: 700 }} />
+                    : <Chip size="small" color="success" variant="outlined" label="Clear" sx={{ fontWeight: 700 }} />}
                 </TableCell>
                 <TableCell align="right">
                   <Tooltip title="History"><IconButton size="small" onClick={() => viewHistory(c)}><History fontSize="small" /></IconButton></Tooltip>
@@ -89,7 +94,7 @@ export default function Customers() {
             ))}
           </TableBody>
         </Table>
-      </Paper>
+      </TableCard>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editId ? 'Edit Customer' : 'Add Customer'}</DialogTitle>

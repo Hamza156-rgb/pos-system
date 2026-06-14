@@ -3,10 +3,11 @@ import {
   Box, Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Stack, Tooltip,
 } from '@mui/material';
-import { Add, Edit, Delete, History } from '@mui/icons-material';
+import { Add, Edit, Delete, History, LocalShippingOutlined } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import api from '../services/api.js';
+import { PageHeader, TableCard, EmptyState } from '../components/ui.jsx';
 
 const empty = { name: '', phone: '', email: '', address: '' };
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
@@ -40,12 +41,13 @@ export default function Suppliers() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight={700}>{t('suppliers')}</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add Supplier</Button>
-      </Stack>
+      <PageHeader
+        title={t('suppliers')}
+        subtitle="Vendors you purchase stock from, with order history"
+        actions={<Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add Supplier</Button>}
+      />
 
-      <Paper>
+      <TableCard>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -57,13 +59,17 @@ export default function Suppliers() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {suppliers.length === 0 && <TableRow><TableCell colSpan={5}>No suppliers yet.</TableCell></TableRow>}
+            {suppliers.length === 0 && (
+              <TableRow><TableCell colSpan={5} sx={{ border: 0 }}>
+                <EmptyState icon={<LocalShippingOutlined />} title="No suppliers yet" subtitle="Add a supplier to record purchase orders." />
+              </TableCell></TableRow>
+            )}
             {suppliers.map((s) => (
               <TableRow key={s.id} hover>
-                <TableCell>{s.name}</TableCell>
-                <TableCell>{s.phone}</TableCell>
-                <TableCell>{s.email}</TableCell>
-                <TableCell>{s.address}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{s.name}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{s.phone}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{s.email}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{s.address}</TableCell>
                 <TableCell align="right">
                   <Tooltip title="Purchase history"><IconButton size="small" onClick={() => viewHistory(s)}><History fontSize="small" /></IconButton></Tooltip>
                   <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(s)}><Edit fontSize="small" /></IconButton></Tooltip>
@@ -73,7 +79,7 @@ export default function Suppliers() {
             ))}
           </TableBody>
         </Table>
-      </Paper>
+      </TableCard>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editId ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>

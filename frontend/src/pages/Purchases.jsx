@@ -4,10 +4,11 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Grid, Stack,
   Chip, IconButton, Autocomplete, Divider, Tooltip,
 } from '@mui/material';
-import { Add, Delete, CheckCircle, Cancel, Visibility } from '@mui/icons-material';
+import { Add, Delete, CheckCircle, Cancel, Visibility, ShoppingCartOutlined } from '@mui/icons-material';
 import { useFetch, useCreate } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import api from '../services/api.js';
+import { PageHeader, TableCard, EmptyState } from '../components/ui.jsx';
 
 const money = (n) => 'Rs ' + Number(n || 0).toLocaleString();
 const statusColor = { pending: 'warning', received: 'success', cancelled: 'default' };
@@ -54,12 +55,13 @@ export default function Purchases() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight={700}>{t('purchases')}</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => { reset(); setOpen(true); }}>New Purchase Order</Button>
-      </Stack>
+      <PageHeader
+        title={t('purchases')}
+        subtitle="Create purchase orders and receive stock from suppliers"
+        actions={<Button variant="contained" startIcon={<Add />} onClick={() => { reset(); setOpen(true); }}>New Purchase Order</Button>}
+      />
 
-      <Paper>
+      <TableCard>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -68,14 +70,18 @@ export default function Purchases() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {purchases.length === 0 && <TableRow><TableCell colSpan={6}>No purchase orders yet.</TableCell></TableRow>}
+            {purchases.length === 0 && (
+              <TableRow><TableCell colSpan={6} sx={{ border: 0 }}>
+                <EmptyState icon={<ShoppingCartOutlined />} title="No purchase orders yet" subtitle="Create an order to restock from a supplier." />
+              </TableCell></TableRow>
+            )}
             {purchases.map((p) => (
               <TableRow key={p.id} hover>
-                <TableCell>{p.orderNumber}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{p.orderNumber}</TableCell>
                 <TableCell>{p.Supplier?.name || '-'}</TableCell>
-                <TableCell>{new Date(p.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell align="right">{money(p.totalAmount)}</TableCell>
-                <TableCell><Chip size="small" label={p.status} color={statusColor[p.status]} /></TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{new Date(p.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{money(p.totalAmount)}</TableCell>
+                <TableCell><Chip size="small" label={p.status} color={statusColor[p.status]} sx={{ textTransform: 'capitalize', fontWeight: 700 }} /></TableCell>
                 <TableCell align="right">
                   <Tooltip title="View"><IconButton size="small" onClick={() => viewDetail(p.id)}><Visibility fontSize="small" /></IconButton></Tooltip>
                   {p.status === 'pending' && (
@@ -89,7 +95,7 @@ export default function Purchases() {
             ))}
           </TableBody>
         </Table>
-      </Paper>
+      </TableCard>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>New Purchase Order</DialogTitle>

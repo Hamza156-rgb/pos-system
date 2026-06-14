@@ -3,9 +3,10 @@ import {
   Box, Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Grid, Stack, Chip, Tooltip,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, GroupOutlined } from '@mui/icons-material';
 import { useFetch, useCreate, useUpdate, useRemove } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
+import { PageHeader, TableCard, EmptyState } from '../components/ui.jsx';
 
 const empty = { name: '', email: '', phone: '', role: 'cashier', password: '', isActive: true };
 
@@ -35,12 +36,13 @@ export default function Users() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight={700}>{t('users')}</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add User</Button>
-      </Stack>
+      <PageHeader
+        title={t('users')}
+        subtitle="Staff accounts and their access roles"
+        actions={<Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add User</Button>}
+      />
 
-      <Paper>
+      <TableCard>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -49,13 +51,18 @@ export default function Users() {
             </TableRow>
           </TableHead>
           <TableBody>
+            {users.length === 0 && (
+              <TableRow><TableCell colSpan={6} sx={{ border: 0 }}>
+                <EmptyState icon={<GroupOutlined />} title="No users yet" subtitle="Add a staff account to get started." />
+              </TableCell></TableRow>
+            )}
             {users.map((u) => (
               <TableRow key={u.id} hover>
-                <TableCell>{u.name}</TableCell>
-                <TableCell>{u.email}</TableCell>
-                <TableCell>{u.phone}</TableCell>
-                <TableCell><Chip size="small" label={u.role} color={u.role === 'admin' ? 'primary' : 'default'} /></TableCell>
-                <TableCell><Chip size="small" label={u.isActive ? 'active' : 'inactive'} color={u.isActive ? 'success' : 'default'} /></TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{u.name}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{u.email}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{u.phone}</TableCell>
+                <TableCell><Chip size="small" label={u.role} color={u.role === 'admin' ? 'primary' : 'default'} variant={u.role === 'admin' ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize', fontWeight: 700 }} /></TableCell>
+                <TableCell><Chip size="small" label={u.isActive ? 'active' : 'inactive'} color={u.isActive ? 'success' : 'default'} variant={u.isActive ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize' }} /></TableCell>
                 <TableCell align="right">
                   <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(u)}><Edit fontSize="small" /></IconButton></Tooltip>
                   <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => del(u.id)}><Delete fontSize="small" /></IconButton></Tooltip>
@@ -64,7 +71,7 @@ export default function Users() {
             ))}
           </TableBody>
         </Table>
-      </Paper>
+      </TableCard>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editId ? 'Edit User' : 'Add User'}</DialogTitle>

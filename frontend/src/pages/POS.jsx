@@ -3,12 +3,17 @@ import {
   Box, Grid, Paper, TextField, Typography, Card, CardActionArea, CardContent, IconButton,
   Button, Divider, Stack, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Chip, Snackbar, Alert,
 } from '@mui/material';
-import { Add, Remove, Delete, Print, WhatsApp, CloudOff, CloudDone } from '@mui/icons-material';
+import {
+  Add, Remove, Delete, Print, WhatsApp, CloudOff, CloudDone, SearchRounded,
+  QrCodeScannerRounded, ShoppingCartOutlined, Inventory2Outlined,
+} from '@mui/icons-material';
 import api from '../services/api.js';
 import { useFetch } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { printReceipt } from '../components/Receipt.jsx';
 import { enqueueSale, syncQueue, isOnline, getQueue } from '../utils/offlineQueue.js';
+import { PageHeader, EmptyState } from '../components/ui.jsx';
+import { InputAdornment } from '@mui/material';
 
 const money = (n) => 'Rs ' + Number(n || 0).toFixed(2);
 
@@ -121,78 +126,119 @@ export default function POS() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight={700}>{t('pos')}</Typography>
-        <Chip icon={online ? <CloudDone /> : <CloudOff />} color={online ? 'success' : 'warning'}
-          label={online ? `Online${queueCount ? ` • ${queueCount} queued` : ''}` : `Offline • ${queueCount} queued`} />
-      </Stack>
+      <PageHeader
+        title={t('pos')}
+        subtitle="Scan or tap products to build the cart, then check out"
+        actions={
+          <Chip
+            icon={online ? <CloudDone /> : <CloudOff />} color={online ? 'success' : 'warning'}
+            variant={online ? 'filled' : 'filled'}
+            label={online ? `Online${queueCount ? ` • ${queueCount} queued` : ''}` : `Offline • ${queueCount} queued`}
+            sx={{ fontWeight: 700, px: 0.5 }}
+          />
+        }
+      />
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2.5}>
         {/* Product selection */}
-        <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} mb={2}>
-              <TextField fullWidth size="small" label={t('search')} value={search} onChange={(e) => setSearch(e.target.value)} />
-              <TextField inputRef={barcodeRef} size="small" label={t('barcode')} placeholder="Scan / Enter" onKeyDown={handleBarcode} />
+        <Grid item xs={12} md={7} lg={8}>
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} mb={2.5}>
+              <TextField
+                fullWidth size="small" placeholder={t('search')} value={search} onChange={(e) => setSearch(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" sx={{ color: 'text.secondary' }} /></InputAdornment> }}
+              />
+              <TextField
+                inputRef={barcodeRef} size="small" placeholder={t('barcode')} onKeyDown={handleBarcode} sx={{ minWidth: { sm: 200 } }}
+                InputProps={{ startAdornment: <InputAdornment position="start"><QrCodeScannerRounded fontSize="small" sx={{ color: 'text.secondary' }} /></InputAdornment> }}
+              />
             </Stack>
-            <Grid container spacing={1} sx={{ maxHeight: '65vh', overflow: 'auto' }}>
-              {products.map((p) => (
-                <Grid item xs={6} sm={4} md={3} key={p.id}>
-                  <Card variant="outlined">
-                    <CardActionArea onClick={() => addToCart(p)} disabled={p.stockQuantity <= 0}>
-                      <CardContent sx={{ p: 1.5 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap>{p.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{p.sku}</Typography>
-                        <Typography variant="subtitle2" color="primary">{money(p.sellingPrice)}</Typography>
-                        <Chip size="small" label={`Stock: ${p.stockQuantity}`} color={p.stockQuantity <= p.reorderLevel ? 'error' : 'default'} />
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
+            <Grid container spacing={1.5} sx={{ maxHeight: '66vh', overflow: 'auto', pr: 0.5 }}>
+              {products.length === 0 && (
+                <Grid item xs={12}>
+                  <EmptyState icon={<Inventory2Outlined />} title="No products" subtitle="Try a different search term." />
                 </Grid>
-              ))}
+              )}
+              {products.map((p) => {
+                const out = p.stockQuantity <= 0;
+                const low = p.stockQuantity <= p.reorderLevel;
+                return (
+                  <Grid item xs={6} sm={4} md={4} lg={3} key={p.id}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        height: '100%', transition: 'all .15s ease', opacity: out ? 0.55 : 1,
+                        '&:hover': out ? {} : { borderColor: 'primary.main', boxShadow: '0 6px 18px rgba(37,99,235,0.14)', transform: 'translateY(-2px)' },
+                      }}
+                    >
+                      <CardActionArea onClick={() => addToCart(p)} disabled={out} sx={{ height: '100%', p: 0.5 }}>
+                        <CardContent sx={{ p: 1.5 }}>
+                          <Typography variant="body2" fontWeight={700} noWrap title={p.name}>{p.name}</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{p.sku}</Typography>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={0.5}>
+                            <Typography variant="subtitle1" fontWeight={800} color="primary.main">{money(p.sellingPrice)}</Typography>
+                            <Chip size="small" label={out ? 'Out' : p.stockQuantity}
+                              color={out ? 'error' : low ? 'warning' : 'default'}
+                              sx={{ fontWeight: 700 }} />
+                          </Stack>
+                        </CardContent>
+                      </CardActionArea>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           </Paper>
         </Grid>
 
         {/* Cart */}
-        <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" mb={1}>{t('cart')} ({cart.length})</Typography>
-            <Box sx={{ maxHeight: '40vh', overflow: 'auto' }}>
-              {cart.length === 0 && <Typography color="text.secondary">No items</Typography>}
+        <Grid item xs={12} md={5} lg={4}>
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, position: { md: 'sticky' }, top: { md: 88 } }}>
+            <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
+              <ShoppingCartOutlined color="primary" />
+              <Typography variant="h6">{t('cart')}</Typography>
+              <Chip size="small" label={cart.length} color="primary" sx={{ fontWeight: 700 }} />
+            </Stack>
+            <Box sx={{ maxHeight: '38vh', overflow: 'auto', mx: -0.5, px: 0.5 }}>
+              {cart.length === 0 && <EmptyState icon={<ShoppingCartOutlined />} title="Cart is empty" subtitle="Add products to get started." />}
               {cart.map((i) => (
-                <Stack key={i.productId} direction="row" alignItems="center" spacing={1} sx={{ py: 0.5 }}>
-                  <Box flex={1}>
-                    <Typography variant="body2" fontWeight={600}>{i.name}</Typography>
-                    <Typography variant="caption">{money(i.unitPrice)} × {i.quantity}</Typography>
+                <Stack key={i.productId} direction="row" alignItems="center" spacing={1}
+                  sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Box flex={1} minWidth={0}>
+                    <Typography variant="body2" fontWeight={600} noWrap>{i.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{money(i.unitPrice)} × {i.quantity}</Typography>
                   </Box>
-                  <IconButton size="small" onClick={() => changeQty(i.productId, -1)}><Remove fontSize="small" /></IconButton>
-                  <Typography>{i.quantity}</Typography>
-                  <IconButton size="small" onClick={() => changeQty(i.productId, 1)}><Add fontSize="small" /></IconButton>
-                  <Typography sx={{ width: 70, textAlign: 'right' }}>{money(i.unitPrice * i.quantity)}</Typography>
+                  <Stack direction="row" alignItems="center" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                    <IconButton size="small" onClick={() => changeQty(i.productId, -1)}><Remove fontSize="small" /></IconButton>
+                    <Typography sx={{ minWidth: 22, textAlign: 'center', fontWeight: 600 }}>{i.quantity}</Typography>
+                    <IconButton size="small" onClick={() => changeQty(i.productId, 1)}><Add fontSize="small" /></IconButton>
+                  </Stack>
+                  <Typography sx={{ width: 76, textAlign: 'right', fontWeight: 700 }}>{money(i.unitPrice * i.quantity)}</Typography>
                   <IconButton size="small" color="error" onClick={() => removeItem(i.productId)}><Delete fontSize="small" /></IconButton>
                 </Stack>
               ))}
             </Box>
-            <Divider sx={{ my: 1 }} />
-            <TextField select size="small" fullWidth label={t('customers')} value={customerId} onChange={(e) => setCustomerId(e.target.value)} sx={{ mb: 1 }}>
+            <Divider sx={{ my: 1.5 }} />
+            <TextField select size="small" fullWidth label={t('customers')} value={customerId} onChange={(e) => setCustomerId(e.target.value)} sx={{ mb: 1.5 }}>
               <MenuItem value="">Walk-in</MenuItem>
               {customers.map((c) => <MenuItem key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</MenuItem>)}
             </TextField>
-            <Stack direction="row" justifyContent="space-between"><span>{t('subtotal')}</span><span>{money(subtotal)}</span></Stack>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <span>{t('discount')}</span>
-              <TextField size="small" type="number" value={discount} onChange={(e) => setDiscount(e.target.value)} sx={{ width: 110 }} />
+            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5, color: 'text.secondary' }}><span>{t('subtotal')}</span><Typography fontWeight={600} color="text.primary">{money(subtotal)}</Typography></Stack>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 0.5 }}>
+              <Typography color="text.secondary">{t('discount')}</Typography>
+              <TextField size="small" type="number" value={discount} onChange={(e) => setDiscount(e.target.value)} sx={{ width: 120 }} />
             </Stack>
-            <Stack direction="row" justifyContent="space-between"><span>{t('tax')} ({taxPct}%)</span><span>{money(tax)}</span></Stack>
-            <Stack direction="row" justifyContent="space-between" sx={{ fontWeight: 700, fontSize: 20, my: 1 }}>
-              <span>{t('grandTotal')}</span><span>{money(grandTotal)}</span>
-            </Stack>
-            <Button variant="contained" size="large" fullWidth disabled={!cart.length} onClick={() => { setAmountPaid(grandTotal.toFixed(2)); setPayOpen(true); }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5, color: 'text.secondary' }}><span>{t('tax')} ({taxPct}%)</span><Typography fontWeight={600} color="text.primary">{money(tax)}</Typography></Stack>
+            <Box sx={{ mt: 1.5, p: 1.75, borderRadius: 2.5, bgcolor: 'primary.main', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography fontWeight={700}>{t('grandTotal')}</Typography>
+              <Typography variant="h6" fontWeight={800}>{money(grandTotal)}</Typography>
+            </Box>
+            <Button variant="contained" size="large" fullWidth disabled={!cart.length} sx={{ mt: 1.5 }}
+              onClick={() => { setAmountPaid(grandTotal.toFixed(2)); setPayOpen(true); }}>
               {t('checkout')}
             </Button>
             {window._lastSale && (
-              <Button startIcon={<Print />} fullWidth sx={{ mt: 1 }} onClick={() => printReceipt(window._lastSale, shop)}>
+              <Button startIcon={<Print />} fullWidth variant="outlined" sx={{ mt: 1 }} onClick={() => printReceipt(window._lastSale, shop)}>
                 Reprint last receipt
               </Button>
             )}

@@ -4,10 +4,11 @@ import {
   Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
   Chip, Grid, Stack, Pagination, Autocomplete,
 } from '@mui/material';
-import { Tune } from '@mui/icons-material';
+import { Tune, SwapVertOutlined, CheckCircleOutline } from '@mui/icons-material';
 import { useFetch, useCreate } from '../hooks/useApi.js';
 import { useI18n } from '../context/I18nContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { PageHeader, TableCard, EmptyState } from '../components/ui.jsx';
 
 const typeColor = { in: 'success', out: 'error', adjustment: 'warning' };
 
@@ -37,19 +38,20 @@ export default function Inventory() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight={700}>{t('inventory')}</Typography>
-        {isAdmin && <Button variant="contained" startIcon={<Tune />} onClick={() => setOpen(true)}>Adjust Stock</Button>}
-      </Stack>
+      <PageHeader
+        title={t('inventory')}
+        subtitle="Track stock movements and spot items running low"
+        actions={isAdmin && <Button variant="contained" startIcon={<Tune />} onClick={() => setOpen(true)}>Adjust Stock</Button>}
+      />
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2.5, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 } }}>
         <Tab label="Stock Movements" />
         <Tab label={`Low Stock (${lowStock.length})`} />
       </Tabs>
 
       {tab === 0 && (
         <>
-          <Paper>
+          <TableCard>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -63,30 +65,34 @@ export default function Inventory() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={7}>Loading...</TableCell></TableRow>}
-                {!isLoading && movements.length === 0 && <TableRow><TableCell colSpan={7}>No movements yet.</TableCell></TableRow>}
+                {isLoading && <TableRow><TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>Loading…</TableCell></TableRow>}
+                {!isLoading && movements.length === 0 && (
+                  <TableRow><TableCell colSpan={7} sx={{ border: 0 }}>
+                    <EmptyState icon={<SwapVertOutlined />} title="No movements yet" subtitle="Stock changes from sales and adjustments will appear here." />
+                  </TableCell></TableRow>
+                )}
                 {movements.map((m) => (
                   <TableRow key={m.id} hover>
-                    <TableCell>{new Date(m.createdAt).toLocaleString()}</TableCell>
-                    <TableCell>{m.Product?.name || '-'}</TableCell>
-                    <TableCell><Chip size="small" label={m.type} color={typeColor[m.type] || 'default'} /></TableCell>
-                    <TableCell align="right">{m.quantity}</TableCell>
+                    <TableCell sx={{ color: 'text.secondary' }}>{new Date(m.createdAt).toLocaleString()}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{m.Product?.name || '-'}</TableCell>
+                    <TableCell><Chip size="small" label={m.type} color={typeColor[m.type] || 'default'} sx={{ textTransform: 'uppercase', fontWeight: 700 }} /></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{m.quantity}</TableCell>
                     <TableCell align="right">{m.balanceAfter}</TableCell>
-                    <TableCell>{m.reason}</TableCell>
-                    <TableCell>{m.reference}</TableCell>
+                    <TableCell sx={{ color: 'text.secondary' }}>{m.reason}</TableCell>
+                    <TableCell sx={{ color: 'text.secondary' }}>{m.reference}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </Paper>
-          <Stack alignItems="center" mt={2}>
-            <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="primary" />
+          </TableCard>
+          <Stack alignItems="center" mt={2.5}>
+            <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="primary" shape="rounded" />
           </Stack>
         </>
       )}
 
       {tab === 1 && (
-        <Paper>
+        <TableCard>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -98,19 +104,23 @@ export default function Inventory() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {lowStock.length === 0 && <TableRow><TableCell colSpan={5}>All products are above reorder level.</TableCell></TableRow>}
+              {lowStock.length === 0 && (
+                <TableRow><TableCell colSpan={5} sx={{ border: 0 }}>
+                  <EmptyState icon={<CheckCircleOutline />} title="All good!" subtitle="Every product is above its reorder level." />
+                </TableCell></TableRow>
+              )}
               {lowStock.map((p) => (
                 <TableRow key={p.id} hover>
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell>{p.sku}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
+                  <TableCell sx={{ color: 'text.secondary' }}>{p.sku}</TableCell>
                   <TableCell>{p.Category?.name || '-'}</TableCell>
-                  <TableCell align="right"><Chip size="small" color="error" label={p.stockQuantity} /></TableCell>
+                  <TableCell align="right"><Chip size="small" color="error" label={p.stockQuantity} sx={{ fontWeight: 700 }} /></TableCell>
                   <TableCell align="right">{p.reorderLevel}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </Paper>
+        </TableCard>
       )}
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
