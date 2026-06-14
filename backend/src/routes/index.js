@@ -1,0 +1,26 @@
+import { Router } from 'express';
+import auth from './auth.routes.js';
+import users from './user.routes.js';
+import categories from './category.routes.js';
+import products from './product.routes.js';
+import suppliers from './supplier.routes.js';
+import customers from './customer.routes.js';
+import purchases from './purchase.routes.js';
+import sales from './sale.routes.js';
+import inventory from './inventory.routes.js';
+import reports from './report.routes.js';
+import misc from './misc.routes.js';
+
+const router = Router();
+router.use('/auth', auth);
+router.use('/users', users);
+router.use('/categories', categories);
+router.use('/products', products);
+router.use('/suppliers', suppliers);
+router.use('/customers', customers);
+router.use('/purchases', purchases);
+router.use('/sales', sales);
+router.use('/inventory', inventory);
+router.use('/reports', reports);
+router.use('/', misc);
+export default router;

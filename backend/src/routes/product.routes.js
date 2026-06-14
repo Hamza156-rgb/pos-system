@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import multer from 'multer';
+import { body } from 'express-validator';
+import * as ctrl from '../controllers/product.controller.js';
+import { authenticate } from '../middlewares/auth.js';
+import { authorize } from '../middlewares/rbac.js';
+import { validate } from '../middlewares/validate.js';
+
+const upload = multer({ storage: multer.memoryStorage() });
+const r = Router();
+r.use(authenticate);
+r.get('/', ctrl.list);
+r.get('/export', authorize('admin'), ctrl.exportCsv);
+r.post('/import', authorize('admin'), upload.single('file'), ctrl.importCsv);
+r.get('/barcode/:barcode', ctrl.getByBarcode);
+r.get('/:id', ctrl.getOne);
+r.post('/', authorize('admin'), [body('name').notEmpty()], validate, ctrl.create);
+r.put('/:id', authorize('admin'), ctrl.update);
+r.delete('/:id', authorize('admin'), ctrl.remove);
+export default r;
