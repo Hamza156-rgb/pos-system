@@ -1,4 +1,6 @@
 import sequelize from '../config/database.js';
+import { getTenantStore } from '../utils/tenantContext.js';
+import TenantModel from './Tenant.js';
 import UserModel from './User.js';
 import CategoryModel from './Category.js';
 import ProductModel from './Product.js';
@@ -18,6 +20,7 @@ import PurchaseReturnItemModel from './PurchaseReturnItem.js';
 import SupplierPaymentModel from './SupplierPayment.js';
 import CustomerPaymentModel from './CustomerPayment.js';
 
+const Tenant = TenantModel(sequelize);
 const User = UserModel(sequelize);
 const Category = CategoryModel(sequelize);
 const Product = ProductModel(sequelize);
@@ -98,8 +101,44 @@ SupplierPayment.belongsTo(Supplier, { foreignKey: 'SupplierId' });
 Customer.hasMany(CustomerPayment, { foreignKey: 'CustomerId' });
 CustomerPayment.belongsTo(Customer, { foreignKey: 'CustomerId' });
 
+// ---------- Multi-tenancy ----------
+// Every shop-owned model gets a TenantId (added by the belongsTo below) plus hooks
+// that auto-stamp TenantId on writes and auto-filter on reads, using the per-request
+// tenant context. Superadmin (no tenant) bypasses scoping and sees everything.
+const tenantScoped = [
+  User, Category, Product, Supplier, Customer,
+  Purchase, PurchaseItem, Sale, SaleItem, InventoryMovement,
+  Setting, AuditLog, SaleReturn, SaleReturnItem, PurchaseReturn,
+  PurchaseReturnItem, SupplierPayment, CustomerPayment,
+];
+
+const stamp = (instance) => {
+  const store = getTenantStore();
+  if (!store || store.isSuperadmin || !store.tenantId) return;
+  if (instance.TenantId == null) instance.TenantId = store.tenantId;
+};
+
+const scope = (options) => {
+  const store = getTenantStore();
+  if (!store || store.isSuperadmin || !store.tenantId) return;
+  options.where = options.where || {};
+  if (!('TenantId' in options.where)) options.where.TenantId = store.tenantId;
+};
+
+for (const M of tenantScoped) {
+  Tenant.hasMany(M, { foreignKey: 'TenantId' });
+  M.belongsTo(Tenant, { foreignKey: 'TenantId' });
+
+  M.addHook('beforeCreate', stamp);
+  M.addHook('beforeBulkCreate', (instances) => instances.forEach(stamp));
+  M.addHook('beforeFind', scope);
+  M.addHook('beforeCount', scope);
+  M.addHook('beforeBulkUpdate', scope);
+  M.addHook('beforeBulkDestroy', scope);
+}
+
 const db = {
-  sequelize,
+  sequelize, Tenant,
   User, Category, Product, Supplier, Customer,
   Purchase, PurchaseItem, Sale, SaleItem,
   InventoryMovement, Setting, AuditLog,
@@ -109,7 +148,8 @@ const db = {
 
 export default db;
 export {
-  sequelize, User, Category, Product, Supplier, Customer,
+  sequelize, Tenant,
+  User, Category, Product, Supplier, Customer,
   Purchase, PurchaseItem, Sale, SaleItem, InventoryMovement, Setting, AuditLog,
   SaleReturn, SaleReturnItem, PurchaseReturn, PurchaseReturnItem,
   SupplierPayment, CustomerPayment,

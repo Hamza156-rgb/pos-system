@@ -1,7 +1,7 @@
 import app from './app.js';
-import { sequelize } from './models/index.js';
+import { sequelize, User } from './models/index.js';
 import logger from './utils/logger.js';
-import { runSeed } from './seed.js';
+import { runSeed, runTenantMigration } from './seed.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -23,8 +23,12 @@ const start = async () => {
   await sequelize.sync({ alter: true });
   logger.info('Models synced');
 
-  if (process.env.AUTO_SEED === 'true') {
-    await runSeed();
+  // Fresh DB → full demo seed (incl. tenancy). Existing DB → migrate to multi-tenant.
+  const userCount = await User.count();
+  if (userCount === 0) {
+    if (process.env.AUTO_SEED === 'true') await runSeed();
+  } else {
+    await runTenantMigration();
   }
 
   app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));

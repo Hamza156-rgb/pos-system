@@ -1,10 +1,45 @@
 import dotenv from 'dotenv';
+import { Op } from 'sequelize';
 import {
-  sequelize, User, Category, Product, Supplier, Customer, Setting,
+  sequelize, Tenant, User, Category, Product, Supplier, Customer, Setting,
+  Purchase, PurchaseItem, Sale, SaleItem, InventoryMovement, AuditLog,
+  SaleReturn, SaleReturnItem, PurchaseReturn, PurchaseReturnItem, SupplierPayment, CustomerPayment,
 } from './models/index.js';
 import logger from './utils/logger.js';
+import { runWithTenant } from './utils/tenantContext.js';
 
 dotenv.config();
+
+const SUPERADMIN = { name: 'Platform Owner', email: 'superadmin@pos.com', password: 'super123', role: 'superadmin' };
+
+// Ensure the platform super-admin exists (created outside any tenant).
+const ensureSuperadmin = async () => {
+  const existing = await User.findOne({ where: { email: SUPERADMIN.email } });
+  if (existing) return existing;
+  return User.create({ ...SUPERADMIN, TenantId: null });
+};
+
+// One-time migration for an existing single-tenant database: create a Default Shop,
+// move all orphaned (TenantId IS NULL) rows into it, and ensure a super-admin exists.
+export const runTenantMigration = async () => {
+  await ensureSuperadmin();
+  let tenant = await Tenant.findOne({ where: { slug: 'default-shop' } });
+  if (!tenant) tenant = await Tenant.create({ name: 'Default Shop', slug: 'default-shop', plan: 'pro', status: 'active' });
+
+  const scoped = [
+    User, Category, Product, Supplier, Customer, Purchase, PurchaseItem, Sale, SaleItem,
+    InventoryMovement, Setting, AuditLog, SaleReturn, SaleReturnItem, PurchaseReturn,
+    PurchaseReturnItem, SupplierPayment, CustomerPayment,
+  ];
+  let moved = 0;
+  for (const M of scoped) {
+    // Don't pull the super-admin into a tenant.
+    const where = M === User ? { TenantId: null, role: { [Op.ne]: 'superadmin' } } : { TenantId: null };
+    const [count] = await M.update({ TenantId: tenant.id }, { where });
+    moved += count || 0;
+  }
+  logger.info(`Tenant migration complete. Default Shop id=${tenant.id}, rows moved=${moved}. Super-admin: ${SUPERADMIN.email} / ${SUPERADMIN.password}`);
+};
 
 export const runSeed = async () => {
   const existing = await User.count();
@@ -14,6 +49,12 @@ export const runSeed = async () => {
   }
   logger.info('Seeding initial data...');
 
+  await ensureSuperadmin();
+  const tenant = await Tenant.create({ name: 'Al-Madina Stationery & Books', slug: 'al-madina', plan: 'pro', status: 'active' });
+
+  // Everything below is created inside the demo shop's tenant context so the
+  // auto-stamp hook tags each row with TenantId.
+  await runWithTenant({ tenantId: tenant.id, isSuperadmin: false }, async () => {
   // Users
   await User.bulkCreate(
     [
@@ -83,8 +124,9 @@ export const runSeed = async () => {
     });
     i += 1;
   }
+  }); // end runWithTenant
 
-  logger.info('Seed complete. Login: admin@pos.com / admin123  |  cashier@pos.com / cashier123');
+  logger.info('Seed complete. Super-admin: superadmin@pos.com / super123  |  Shop admin: admin@pos.com / admin123  |  Cashier: cashier@pos.com / cashier123');
 };
 
 // Allow running directly: `npm run seed`

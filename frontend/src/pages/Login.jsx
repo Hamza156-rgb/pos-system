@@ -92,6 +92,9 @@ export default function Login() {
 
           <Divider sx={{ my: 2.5 }}><Typography variant="caption" color="text.secondary">Demo accounts</Typography></Divider>
           <Stack direction="row" spacing={1.5}>
+            <Button fullWidth variant="outlined" size="small" onClick={() => fillDemo('superadmin@pos.com', 'super123')}>
+              Owner
+            </Button>
             <Button fullWidth variant="outlined" size="small" onClick={() => fillDemo('admin@pos.com', 'admin123')}>
               Admin
             </Button>

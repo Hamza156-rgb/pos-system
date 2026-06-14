@@ -16,7 +16,7 @@ import { sidebar } from '../theme.js';
 const drawerWidth = sidebar.width;
 
 export default function Layout() {
-  const { user, logout, isAdmin, can } = useAuth();
+  const { user, logout, isAdmin, isSuperadmin, can } = useAuth();
   const { t, toggleLang, lang } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,7 +30,7 @@ export default function Layout() {
     return n.perm ? can(n.perm) : true;
   };
 
-  const navGroups = [
+  const shopGroups = [
     { items: [
       { to: '/', label: t('dashboard'), icon: <DashboardIcon /> },
       { to: '/pos', label: t('pos'), icon: <PointOfSale />, perm: 'pos' },
@@ -60,6 +60,11 @@ export default function Layout() {
   ]
     .map((g) => ({ ...g, items: g.items.filter(isVisible) }))
     .filter((g) => g.items.length);
+
+  // Super-admins manage shops only; shopkeepers get the full POS menu.
+  const navGroups = isSuperadmin
+    ? [{ items: [{ to: '/tenants', label: 'Shops', icon: <StorefrontRounded /> }] }]
+    : shopGroups;
 
   const allItems = navGroups.flatMap((g) => g.items);
   const pageTitle = allItems.find((n) => n.to === location.pathname)?.label || t('dashboard');

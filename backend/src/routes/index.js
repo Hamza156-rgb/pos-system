@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import auth from './auth.routes.js';
+import tenants from './tenant.routes.js';
 import users from './user.routes.js';
 import categories from './category.routes.js';
 import products from './product.routes.js';
@@ -16,6 +17,7 @@ import misc from './misc.routes.js';
 
 const router = Router();
 router.use('/auth', auth);
+router.use('/tenants', tenants);
 router.use('/users', users);
 router.use('/categories', categories);
 router.use('/products', products);

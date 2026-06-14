@@ -3,8 +3,9 @@ export default (sequelize) =>
   sequelize.define('Product', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     name: { type: DataTypes.STRING, allowNull: false },
-    sku: { type: DataTypes.STRING, allowNull: false, unique: true },
-    barcode: { type: DataTypes.STRING, unique: true },
+    // Not globally unique — each shop generates its own SKU-0001, uniqueness is per tenant.
+    sku: { type: DataTypes.STRING, allowNull: false },
+    barcode: { type: DataTypes.STRING },
     brand: { type: DataTypes.STRING },
     purchasePrice: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
     sellingPrice: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },

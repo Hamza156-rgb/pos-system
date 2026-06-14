@@ -1,4 +1,4 @@
-import { User } from '../models/index.js';
+import { User, Tenant } from '../models/index.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -12,6 +12,14 @@ export const login = asyncHandler(async (req, res) => {
     throw ApiError.unauthorized('Invalid email or password');
   }
   if (!user.isActive) throw ApiError.forbidden('Account is disabled');
+
+  // Shop users: block login if their shop is suspended or expired.
+  if (user.role !== 'superadmin') {
+    const tenant = user.TenantId ? await Tenant.findByPk(user.TenantId) : null;
+    if (!tenant) throw ApiError.forbidden('No shop is associated with this account');
+    if (tenant.status === 'suspended') throw ApiError.forbidden('This shop has been suspended. Please contact support.');
+    if (tenant.expiresAt && new Date(tenant.expiresAt) < new Date()) throw ApiError.forbidden('This shop subscription has expired.');
+  }
 
   const payload = { id: user.id, role: user.role, name: user.name };
   const accessToken = signAccessToken(payload);

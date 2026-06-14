@@ -16,13 +16,22 @@ import AuditLogs from './pages/AuditLogs.jsx';
 import SaleReturns from './pages/SaleReturns.jsx';
 import PurchaseReturns from './pages/PurchaseReturns.jsx';
 import Ledgers from './pages/Ledgers.jsx';
+import Tenants from './pages/Tenants.jsx';
+import { useAuth } from './context/AuthContext.jsx';
+
+// Super-admins land on the Shops console; everyone else on the Dashboard.
+function HomeRoute() {
+  const { isSuperadmin } = useAuth();
+  return isSuperadmin ? <Navigate to="/tenants" replace /> : <Dashboard />;
+}
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<HomeRoute />} />
+        <Route path="tenants" element={<ProtectedRoute superadminOnly><Tenants /></ProtectedRoute>} />
         <Route path="pos" element={<ProtectedRoute perm="pos"><POS /></ProtectedRoute>} />
         <Route path="products" element={<ProtectedRoute perm="products"><Products /></ProtectedRoute>} />
         <Route path="inventory" element={<ProtectedRoute perm="inventory"><Inventory /></ProtectedRoute>} />
